@@ -11,7 +11,8 @@ inputs persist in `localStorage`.
 ## Features
 
 - **Adjustable pay schedule**: bi-weekly (26/yr, anchored to any past pay date on any
-  weekday) or semi-monthly (24/yr, with configurable pay days, e.g. 15th + last day).
+  weekday), semi-monthly (24/yr, with configurable pay days, e.g. 15th + last day),
+  or monthly (12/yr, on a configurable day of the month).
 - **Current IRS limits** built in as presets (2025 and 2026), with editable fields for
   future years, including age-50+ catch-up and the SECURE 2.0 enhanced catch-up for
   ages 60–63 (correctly excluded from the 415(c) total).
@@ -20,6 +21,9 @@ inputs persist in `localStorage`.
   Fidelity's most common), dollar-cap on contributions ("50¢ per $1 up to $12,250" -
   the Google/Meta/Microsoft style, timing-proof by design), or no match - each with
   a live "worth up to $X this year" line and the 401(a)(17) compensation cap applied.
+  Plans that match after-tax contributions are supported too ("Which contributions
+  get matched?"); since more match shrinks the 415(c) space that after-tax
+  contributions draw from, the simulation iterates to the fixed point.
 - **Match timing as a first-class question**: for %-of-pay formulas the tool asks
   whether missed match comes back to you (true-up), explains why in plain terms, and
   includes a "find out in 2 minutes" decoder - where to look in the SPD, what the
@@ -36,6 +40,21 @@ inputs persist in `localStorage`.
   pre-tax / match / after-tax, climbing to the IRS ceiling line - front-loading shows
   the steep-then-flat shape at a glance.
 - Warnings for over-contribution, unachievable targets, and 27-paycheck years.
+
+## Tests
+
+A headless test suite drives the real `index.html` in [jsdom](https://github.com/jsdom/jsdom)
+via Node's built-in test runner - no browser needed:
+
+```sh
+npm install
+npm test
+```
+
+Tests run against a frozen "today" (`FIXED_TODAY` in `test/helpers.js`) so paycheck
+counts are deterministic, and read results from the rendered "See the full math"
+breakdown table - the same numbers a user sees. CI runs the suite on every push and
+blocks the Cloudflare Pages deploy if it fails.
 
 ## Deploy to Cloudflare Pages
 

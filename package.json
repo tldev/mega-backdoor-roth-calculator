@@ -1,0 +1,12 @@
+{
+  "name": "mega-backdoor-roth-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Headless test suite for the mega backdoor Roth calculator",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
