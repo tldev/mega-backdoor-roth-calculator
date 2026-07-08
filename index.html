@@ -433,6 +433,14 @@
           <select id="bonusMonth"></select>
         </div>
       </div>
+      <div class="field" id="bonusMatchedField">
+        <label for="bonusMatched">Does the match apply to your bonus?</label>
+        <select id="bonusMatched">
+          <option value="yes">Yes - it's matched like regular pay</option>
+          <option value="no">No - bonus pay isn't matched</option>
+        </select>
+        <div class="hint">Plans differ here - your plan summary says whether bonuses count as “eligible compensation”.</div>
+      </div>
       <div class="hint">Your contribution elections apply to bonus checks too.</div>
     </div>
     <div class="explainer" id="catchupExplainer" style="display:none"></div>
@@ -667,6 +675,7 @@
     hasBonus: 'no',
     bonusAmount: 0,
     bonusMonth: 'none',
+    bonusMatched: 'yes',
     ytdDeferral: 0,
     ytdMatch: 0,
     ytdAfterTax: 0,
@@ -681,7 +690,7 @@
   const $ = id => document.getElementById(id);
   const fields = ['limDeferral','limTotal','limCatchup','limCatchup63','ageBracket','salary',
                   'matchType','matchRate','matchCap','t1Rate','t1Width','t2Rate','t2Width',
-                  'matchDollarRate','matchDollarCap','trueup','maxElect','hasBonus','bonusAmount','bonusMonth',
+                  'matchDollarRate','matchDollarCap','trueup','maxElect','hasBonus','bonusAmount','bonusMonth','bonusMatched',
                   'ytdDeferral','ytdMatch','ytdAfterTax',
                   'baseDate','smDayA','smDayB','granularity'];
 
@@ -804,10 +813,14 @@
 
     // rooms
     const remainingDeferral = Math.max(0, deferralLimit - n('ytdDeferral'));
-    const annualComp = Math.min(n('salary') + (bonusApplied ? bonus : 0), compCap);
+    // bonus may be excluded from match-eligible compensation (plan-specific)
+    const bonusMatchable = state.bonusMatched !== 'no';
+    const matchableBonus = bonusApplied && bonusMatchable ? bonus : 0;
+    const annualComp = Math.min(n('salary') + matchableBonus, compCap);
 
     // ---- match formulas by type ----
-    const compScale = Math.min(1, compCap / Math.max(1, n('salary') + (bonusApplied ? bonus : 0)));
+    const compScale = Math.min(1, compCap / Math.max(1, n('salary') + matchableBonus));
+    const matchableGross = s => s.isBonus && !bonusMatchable ? s.gross - bonus : s.gross;
     const tieredMatch = (contrib, comp) => {
       const r = comp > 0 ? contrib / comp : 0;
       return (t1r * Math.min(r, t1w) + t2r * Math.min(Math.max(r - t1w, 0), t2w)) * comp;
@@ -848,7 +861,7 @@
       for (const s of sim) {
         s.pre = Math.min((defPct / 100) * s.gross, room);
         room -= s.pre;
-        s.match = matchOnCheck(s.pre, s.gross);
+        s.match = matchOnCheck(s.pre, matchableGross(s));
       }
     } else {
       // front-load: max election on pre-tax until the limit, then switch to after-tax
@@ -857,7 +870,7 @@
       for (const s of sim) {
         s.pre = Math.min(F * s.gross, room);
         room -= s.pre;
-        s.match = matchOnCheck(s.pre, s.gross);
+        s.match = matchOnCheck(s.pre, matchableGross(s));
       }
       frontload = { F: F * 100, preShort: room };
     }
@@ -1092,6 +1105,8 @@
 
     // --- bonus fields (step 2) ---
     $('bonusFields').style.display = state.hasBonus === 'yes' ? '' : 'none';
+    $('bonusMatchedField').style.display =
+      (c.matchType === 'percent' || c.matchType === 'tiered') ? '' : 'none';
 
     // --- match group (step 2): field visibility, worth badge, example, reassurance ---
     const isPctType = c.matchType === 'percent' || c.matchType === 'tiered';
