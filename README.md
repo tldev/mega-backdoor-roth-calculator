@@ -6,8 +6,7 @@ it computes the pre-tax/Roth and after-tax elections to set so you exactly hit t
 IRS 402(g) and 415(c) limits by year-end.
 
 Everything runs client-side - no backend; calculations happen in the browser and
-inputs persist in `localStorage`. The page includes Google Analytics for basic
-page-view stats (calculator inputs are not sent to it).
+inputs persist in `localStorage`.
 
 ## Features
 
