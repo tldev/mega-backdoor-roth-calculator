@@ -5,8 +5,9 @@ YTD numbers from your latest paycheck, your salary, and your employer's match te
 it computes the pre-tax/Roth and after-tax elections to set so you exactly hit the
 IRS 402(g) and 415(c) limits by year-end.
 
-Everything runs client-side - no backend, no data leaves the browser. Inputs persist
-in `localStorage`.
+Everything runs client-side - no backend; calculations happen in the browser and
+inputs persist in `localStorage`. The page includes Google Analytics for basic
+page-view stats (calculator inputs are not sent to it).
 
 ## Features
 

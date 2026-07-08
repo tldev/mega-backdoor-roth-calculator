@@ -4,6 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mega Backdoor Roth Paycheck Calculator</title>
+<script>
+  // Google Analytics - replace with your GA4 measurement ID to enable
+  const GA_ID = 'G-XXXXXXXXXX';
+  if (!/XXXX/.test(GA_ID)) {
+    const gs = document.createElement('script');
+    gs.async = true;
+    gs.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    document.head.appendChild(gs);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', GA_ID);
+  }
+</script>
 <style>
   :root {
     --surface: #fcfcfb;
@@ -360,7 +374,7 @@
 
 <header>
   <h1>Mega Backdoor Roth Calculator</h1>
-  <p>Answer four quick questions and get the exact 401(k) elections to set so you max out by December 31. Everything runs in your browser - nothing is sent anywhere.</p>
+  <p>Answer four quick questions and get the exact 401(k) elections to set so you max out by December 31. All calculations happen in your browser.</p>
 </header>
 
 <!-- STEP 1 -->
