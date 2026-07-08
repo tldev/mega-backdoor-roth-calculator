@@ -169,6 +169,7 @@
     margin-top: 12px;
   }
   .worth-line { color: var(--good); font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .worth-gap { color: var(--ink-2); font-size: 12.5px; margin-top: 4px; }
   .assure { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
 
   /* ---------- answer (hero) ---------- */
@@ -985,6 +986,24 @@
     // add the true-up to the final check so the chart reaches the real year-end total
     if (trueUpAmount > 0 && sim.length) sim[sim.length - 1].trueUp = trueUpAmount;
 
+    // ---- why the projected match may fall short of the full-year maximum ----
+    // ceiling still collectible from remaining checks (per-check formula maxed out)
+    let futureMaxMatch = 0;
+    if (matchType === 'dollar') {
+      futureMaxMatch = Math.max(0, dCap - n('ytdMatch'));
+    } else if (matchType !== 'none') {
+      for (const s of sim) {
+        const mg = matchableGross(s) * compScale;
+        futureMaxMatch += annualMatchFormula(mg, mg);
+      }
+    }
+    const matchGap = Math.max(0, maxAnnualMatch - estTotalMatch);
+    // past = entitlement of checks already paid minus match actually received; only
+    // meaningful without a true-up (a true-up recovers it)
+    const matchGapPast = hasTrueup || matchType === 'dollar' ? 0
+      : Math.min(matchGap, Math.max(0, maxAnnualMatch - futureMaxMatch - n('ytdMatch')));
+    const matchGapFuture = Math.max(0, matchGap - matchGapPast);
+
     const defPctR = strategy === 'even' ? roundUp(defPct) : frontload.F;
     const atPctR = strategy === 'even' ? roundUp(atPct) : frontload.F;
     const defOvershoot = strategy === 'even' && g ? Math.max(0, (defPctR - defPct) / 100 * totalRemainingComp) : 0;
@@ -1000,6 +1019,7 @@
       allDates, remaining: remainingDates, past, N, gross, checksPerYear,
       hasTrueup, strategy, frontload, sim, bonus, bonusApplied, bonusIgnored, annualComp,
       matchType, timingSafe, maxAnnualMatch, matchThresholdPct, atMatched,
+      matchGapPast, matchGapFuture,
       matchedContrib: projDeferral + (atMatched ? projAfterTax : 0),
       perCheckMaxMatch: annualMatchFormula(gross, gross),
       matchEntitlement: annualMatchFormula(projDeferral + (atMatched ? projAfterTax : 0), annualComp),
@@ -1191,9 +1211,18 @@
       mbox.style.display = 'none';
       mbox.innerHTML = '';
     } else {
+      let gapLine = '';
+      if (!c.schedError && c.N > 0 && (c.matchGapPast > 1 || c.matchGapFuture > 1)) {
+        const parts = [];
+        if (c.matchGapPast > 1)
+          parts.push(`${usd.format(c.matchGapPast)} sat in paychecks already paid and can't be recovered without a true-up`);
+        if (c.matchGapFuture > 1)
+          parts.push(`${usd.format(c.matchGapFuture)} would take more contributions than you have room for this year`);
+        gapLine = `<div class="worth-gap">You're on track to collect ${usd.format(c.estTotalMatch)} of it: ${parts.join(', and ')}.</div>`;
+      }
       mbox.style.display = '';
       mbox.innerHTML = `${exText}${c.maxAnnualMatch > 0
-        ? `<div class="worth-line">💰 Worth up to ${usd.format(c.maxAnnualMatch)} from your company this year.</div>` : ''}`;
+        ? `<div class="worth-line">💰 Worth up to ${usd.format(c.maxAnnualMatch)} from your company this year.</div>` : ''}${gapLine}`;
     }
 
     const assure = $('matchAssure');

@@ -215,3 +215,31 @@ test('state persists to localStorage', () => {
   assert.equal(saved.moDay, 'last');
   assert.equal(saved.atMatched, 'yes');
 });
+
+test('match shortfall explainer', async t => {
+  // Reproduces a real report: $4M salary (comp-capped at $360k), tiered match,
+  // no true-up, light YTD contributions -> half the year's match already forfeited.
+  await t.test('missed per-paycheck match shows as an unrecoverable past gap', () => {
+    const { $, set } = boot();
+    set('matchType', 'tiered');
+    set('salary', '4000000');
+    set('trueup', 'no');
+    set('ytdDeferral', '3000');
+    set('ytdMatch', '1000');
+    set('ytdAfterTax', '3000');
+    const box = $('matchBox').textContent;
+    assert.match(box, /Worth up to \$14,400/);
+    assert.match(box, /on track to collect \$7,646/);
+    assert.match(box, /\$6,754 sat in paychecks already paid/);
+  });
+
+  await t.test('a true-up recovers the past, so no gap line appears', () => {
+    const { $, set } = boot();
+    set('matchType', 'tiered');
+    set('salary', '4000000');
+    set('trueup', 'yes');
+    set('ytdDeferral', '3000');
+    set('ytdMatch', '1000');
+    assert.doesNotMatch($('matchBox').textContent, /sat in paychecks/);
+  });
+});
