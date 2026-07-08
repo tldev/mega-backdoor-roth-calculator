@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mega Backdoor Roth Paycheck Calculator</title>
+<style>
+  :root {
+    --surface: #fcfcfb;
+    --page: #f9f9f7;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --s1: #2a78d6;   /* pre-tax / Roth */
+    --s2: #1baf7a;   /* employer match */
+    --s3: #eda100;   /* after-tax */
+    --good: #006300;
+    --good-mark: #0ca30c;
+    --warning: #fab219;
+    --critical: #d03b3b;
+    --input-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: #1a1a19;
+      --page: #0d0d0d;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --hairline: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --s1: #3987e5;
+      --s2: #199e70;
+      --s3: #c98500;
+      --good: #0ca30c;
+      --good-mark: #0ca30c;
+      --input-bg: #111110;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 36px 20px 56px; }
+  header h1 { font-size: 24px; margin: 0 0 6px; }
+  header p { margin: 0 0 28px; color: var(--ink-2); max-width: 60ch; }
+
+  /* ---------- step cards ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .step-head { display: flex; gap: 12px; align-items: baseline; margin-bottom: 4px; }
+  .step-num {
+    flex: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    transform: translateY(4px);
+  }
+  .step-head h2 { font-size: 17px; margin: 0; }
+  .step-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 14px 36px; }
+  .step-body { margin-left: 36px; }
+  @media (max-width: 560px) { .step-body, .step-sub { margin-left: 0; } }
+
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 13.5px; color: var(--ink-2); margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%;
+    padding: 8px 10px;
+    font: inherit;
+    color: var(--ink);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  .seg { display: flex; margin-bottom: 14px; }
+  .seg button {
+    font: inherit; font-size: 13.5px;
+    flex: 1;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .seg button:first-child { border-radius: 8px 0 0 8px; }
+  .seg button:last-child { border-radius: 0 8px 8px 0; border-left: none; }
+  .seg button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .feedback {
+    margin-top: 14px;
+    font-size: 13.5px;
+    color: var(--good);
+    font-weight: 500;
+  }
+  .feedback.err { color: var(--critical); }
+
+  .explainer {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .explainer b { color: var(--ink); }
+  .explainer ul { margin: 6px 0 0; padding-left: 18px; }
+  .explainer li { margin-bottom: 4px; }
+  .explainer li:last-child { margin-bottom: 0; }
+  details.mini { margin-top: 8px; }
+  details.mini summary { cursor: pointer; font-size: 13px; color: var(--ink-2); font-weight: 500; }
+  details.mini .panel {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  details.mini .panel p { margin: 0 0 10px; }
+  details.mini .panel p:last-child { margin-bottom: 0; }
+  details.mini .panel b, details.mini .panel .ph { color: var(--ink); }
+  .decode { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; margin: 0 0 10px; }
+  details.mini .src { border-top: 1px solid var(--hairline); margin-top: 12px; padding-top: 10px; font-size: 12.5px; color: var(--muted); }
+  details.mini a { color: var(--accent); }
+
+  .explainer.good {
+    border-left-color: var(--good-mark);
+    background: color-mix(in srgb, var(--good-mark) 6%, var(--surface));
+    margin-top: 12px;
+  }
+  .worth-line { color: var(--good); font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .assure { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+  /* ---------- answer (hero) ---------- */
+  .answer {
+    border-top: 3px solid var(--accent);
+    padding: 24px 20px;
+  }
+  .answer .eyebrow {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent);
+    margin: 0 0 2px;
+  }
+  .answer h2 { font-size: 19px; margin: 0 0 14px; }
+  .strategy-row {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .strategy-row .seg { margin: 0; flex: none; }
+  .strategy-row .seg button { flex: none; padding: 6px 14px; font-size: 13px; }
+  .strategy-row .maxelect { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .strategy-row .maxelect input {
+    width: 64px;
+    font: inherit; font-size: 13px;
+    color: var(--ink);
+    padding: 5px 7px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .elections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 6px; }
+  @media (max-width: 480px) { .elections { grid-template-columns: 1fr; } }
+  .election {
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .election .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; }
+  .election .label { font-size: 13.5px; color: var(--ink-2); }
+  .election .value { font-size: 42px; font-weight: 650; line-height: 1.15; margin: 2px 0; }
+  .election .sub { font-size: 13px; color: var(--muted); }
+  .answer .status { font-size: 13.5px; margin: 12px 0 0; color: var(--ink-2); }
+  .answer .status .ok { color: var(--good); font-weight: 600; }
+  .answer .muted-note { color: var(--muted); font-size: 14px; }
+
+  /* front-load schedule */
+  .schedule { margin: 4px 0 0; }
+  .sched-step {
+    display: flex; gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .sched-step:last-child { border-bottom: none; }
+  .sched-when { flex: none; width: 150px; font-weight: 600; font-size: 13.5px; }
+  .sched-what { font-size: 13.5px; color: var(--ink-2); }
+  .sched-what b { color: var(--ink); }
+  .sched-what .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  @media (max-width: 480px) { .sched-step { flex-direction: column; gap: 2px; } .sched-when { width: auto; } }
+
+  details.checklist { margin-top: 12px; }
+  details.checklist summary {
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .alert {
+    display: flex; gap: 9px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .alert .icon { flex: none; font-weight: 700; }
+  .alert.warning { border-left: 3px solid var(--warning); }
+  .alert.critical { border-left: 3px solid var(--critical); }
+  .alert.critical .icon { color: var(--critical); }
+  .alert b { color: var(--ink); }
+
+  .answer-foot {
+    margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid var(--hairline);
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .answer-foot select {
+    font: inherit; font-size: 13px;
+    color: var(--ink-2);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 6px;
+  }
+
+  /* ---------- chart ---------- */
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .chart-head h2 { font-size: 17px; margin: 0; }
+  .legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+  .legend .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .chart-sub { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+  .chart-wrap { position: relative; }
+  .chart-wrap svg { width: 100%; height: auto; display: block; }
+  #chartTip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    padding: 8px 11px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    display: none;
+    min-width: 160px;
+    z-index: 2;
+  }
+  #chartTip .t { font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  #chartTip .grid { display: grid; grid-template-columns: auto auto auto; column-gap: 14px; row-gap: 2px; align-items: baseline; }
+  #chartTip .grid .d { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  #chartTip .grid .v { text-align: right; font-variant-numeric: tabular-nums; }
+  #chartTip .grid .full { grid-column: 1 / -1; }
+  #chartTip .grid .tcell { border-top: 1px solid var(--hairline); margin-top: 4px; padding-top: 4px; font-weight: 600; color: var(--ink); }
+  #chartTip .grid .tcell.d { color: var(--ink-2); }
+  #chartTip .k { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+
+  /* ---------- collapsed detail sections ---------- */
+  details.section { margin-bottom: 12px; }
+  details.section > summary {
+    cursor: pointer;
+    padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-2);
+    list-style-position: inside;
+  }
+  details.section[open] > summary { border-radius: 10px 10px 0 0; }
+  details.section .inner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 16px;
+  }
+
+  /* meters */
+  .meter-block { margin-bottom: 16px; }
+  .meter-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; gap: 8px; flex-wrap: wrap; }
+  .meter-head .t { color: var(--ink-2); }
+  .meter-head .v { color: var(--ink); font-weight: 600; }
+  .meter {
+    height: 12px; border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    display: flex; overflow: hidden;
+  }
+  .meter .seg-ytd { background: var(--accent); }
+  .meter .seg-proj { background: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+  .meter .seg-ytd + .seg-proj { margin-left: 2px; }
+  .meter.over .seg-ytd { background: var(--critical); }
+  .meter-legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 5px; flex-wrap: wrap; }
+  .meter-legend .k { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  /* breakdown table */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  td { padding: 7px 4px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+  td .note { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  tr.section td { padding-top: 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: none; font-weight: 600; }
+
+  .paydates { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .paydates span {
+    font-size: 12.5px;
+    padding: 3px 8px;
+    border: 1px solid var(--hairline);
+    border-radius: 5px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .presets { display: flex; gap: 8px; margin-bottom: 14px; }
+  .presets button {
+    font: inherit; font-size: 13px;
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .presets button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  footer { font-size: 12.5px; color: var(--muted); margin-top: 28px; }
+  .reset { font-size: 12.5px; background: none; border: none; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Mega Backdoor Roth Calculator</h1>
+  <p>Answer four quick questions and get the exact 401(k) elections to set so you max out by December 31. Everything runs in your browser - nothing is sent anywhere.</p>
+</header>
+
+<!-- STEP 1 -->
+<div class="card">
+  <div class="step-head"><span class="step-num">1</span><h2>How do you get paid?</h2></div>
+  <p class="step-sub">This determines how many paychecks you have left this year.</p>
+  <div class="step-body">
+    <div class="seg" id="schedSeg">
+      <button data-sched="biweekly">Every two weeks</button>
+      <button data-sched="semimonthly">Twice a month</button>
+    </div>
+    <div id="biweeklyFields">
+      <div class="field">
+        <label for="baseDate">Pick any past pay date (any weekday works)</label>
+        <input type="date" id="baseDate">
+        <div class="hint">Future pay dates are projected every 14 days from this date.</div>
+      </div>
+    </div>
+    <div id="semimonthlyFields" style="display:none">
+      <div class="row2">
+        <div class="field">
+          <label for="smDayA">First pay day each month</label>
+          <select id="smDayA"></select>
+        </div>
+        <div class="field">
+          <label for="smDayB">Second pay day each month</label>
+          <select id="smDayB"></select>
+        </div>
+      </div>
+      <div class="hint">The 15th + last day is most common, but companies vary - check a paystub.</div>
+    </div>
+    <div class="feedback" id="schedFeedback"></div>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="card">
+  <div class="step-head"><span class="step-num">2</span><h2>About you</h2></div>
+  <p class="step-sub">Your salary, your age, and any bonus still coming.</p>
+  <div class="step-body">
+    <div class="row2">
+      <div class="field">
+        <label for="salary">Base yearly salary ($)</label>
+        <input type="number" id="salary" min="0" step="1000">
+      </div>
+      <div class="field">
+        <label for="ageBracket">Will you be 50 or older this year?</label>
+        <select id="ageBracket">
+          <option value="under50">No - under 50</option>
+          <option value="50plus">Yes - 50 to 59, or 64+</option>
+          <option value="60to63">Yes - 60 to 63</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="hasBonus">Do you have a bonus coming this year?</label>
+      <select id="hasBonus">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+    <div id="bonusFields" style="display:none">
+      <div class="row2">
+        <div class="field">
+          <label for="bonusAmount">How much ($)</label>
+          <input type="number" id="bonusAmount" min="0" step="500">
+        </div>
+        <div class="field">
+          <label for="bonusMonth">Roughly when?</label>
+          <select id="bonusMonth"></select>
+        </div>
+      </div>
+      <div class="hint">Your contribution elections apply to bonus checks too.</div>
+    </div>
+    <div class="explainer" id="catchupExplainer" style="display:none"></div>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="card">
+  <div class="step-head"><span class="step-num">3</span><h2>Your employer match</h2></div>
+  <p class="step-sub">How the match is calculated decides your best contribution strategy.</p>
+  <div class="step-body">
+    <div class="field">
+      <label for="matchType">How they match</label>
+        <select id="matchType">
+          <option value="percent">A % of my pay</option>
+          <option value="tiered">Two tiers</option>
+          <option value="dollar">Dollar cap (common in tech)</option>
+          <option value="none">No match</option>
+        </select>
+      </div>
+      <div class="row2" id="matchPercentFields">
+        <div class="field">
+          <label for="matchRate">They match this %</label>
+          <input type="number" id="matchRate" min="0" max="200" step="1">
+        </div>
+        <div class="field">
+          <label for="matchCap">…up to this % of pay</label>
+          <input type="number" id="matchCap" min="0" max="100" step="0.5">
+        </div>
+      </div>
+      <div id="matchTieredFields" style="display:none">
+        <div class="row2">
+          <div class="field">
+            <label for="t1Rate">They match this %</label>
+            <input type="number" id="t1Rate" min="0" max="200" step="1">
+          </div>
+          <div class="field">
+            <label for="t1Width">…of your first % of pay</label>
+            <input type="number" id="t1Width" min="0" max="100" step="0.5">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="t2Rate">Then this %</label>
+            <input type="number" id="t2Rate" min="0" max="200" step="1">
+          </div>
+          <div class="field">
+            <label for="t2Width">…of your next % of pay</label>
+            <input type="number" id="t2Width" min="0" max="100" step="0.5">
+          </div>
+        </div>
+      </div>
+      <div class="row2" id="matchDollarFields" style="display:none">
+        <div class="field">
+          <label for="matchDollarRate">They match this %</label>
+          <input type="number" id="matchDollarRate" min="0" max="200" step="1">
+        </div>
+        <div class="field">
+          <label for="matchDollarCap">…up to this $ per year</label>
+          <input type="number" id="matchDollarCap" min="0" step="250">
+          <div class="hint">“Up to 50% of the IRS limit” = $12,250 for 2026</div>
+        </div>
+      </div>
+      <div class="explainer good" id="matchBox" style="display:none"></div>
+      <div class="field" id="timingField" style="margin-top:12px">
+        <label for="trueup">If you max out early, what happens to the rest of the year's match?</label>
+        <select id="trueup">
+          <option value="unsure">Not sure</option>
+          <option value="no">I'd lose it</option>
+          <option value="yes">They make it up</option>
+        </select>
+      </div>
+      <div class="assure" id="matchAssure"></div>
+      <details class="mini" id="matchHowTo">
+        <summary>How to check yours - 2 minutes, worth real money</summary>
+        <div class="panel">
+          <p>About <b>1 in 3 companies</b> never pay back match you miss by maxing out early.</p>
+          <p>Search your 401(k) site's plan summary (or the SPD PDF) for “match”:</p>
+          <div class="decode">
+            <span class="ph">“each pay period”</span><span>→ I'd lose it</span>
+            <span class="ph">“true-up” / “annual reconciliation”</span><span>→ they make it up</span>
+            <span class="ph">“% of your contributions, up to $X”</span><span>→ the dollar-cap type</span>
+          </div>
+          <p>Or ask HR: <i>“If I max out early, is there a match true-up?”</i></p>
+          <p class="src">Source: <a href="https://www.psca.org/news/psca-news/2026/2/trueing-up-the-match/"
+             target="_blank" rel="noopener">PSCA 68th Annual Survey of 401(k) Plans</a> - 34% of
+             periodic-match plans never true up.</p>
+        </div>
+      </details>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="card">
+  <div class="step-head"><span class="step-num">4</span><h2>What's on your latest paystub?</h2></div>
+  <p class="step-sub">Copy these three numbers from the year-to-date (YTD) column.</p>
+  <div class="step-body">
+    <div class="field">
+      <label for="ytdDeferral">YTD employee 401(k) contributions (pre-tax + Roth)</label>
+      <input type="number" id="ytdDeferral" min="0" step="100">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="ytdMatch">YTD employer match</label>
+        <input type="number" id="ytdMatch" min="0" step="100">
+      </div>
+      <div class="field">
+        <label for="ytdAfterTax">YTD after-tax contributions</label>
+        <input type="number" id="ytdAfterTax" min="0" step="100">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ANSWER -->
+<div class="card answer" id="answerCard">
+  <p class="eyebrow">Your answer</p>
+  <h2 id="answerTitle">Set these elections in your 401(k) portal</h2>
+  <div class="strategy-row" id="strategyRow" style="display:none">
+    <div class="seg" id="strategySeg">
+      <button data-strategy="even">Spread evenly</button>
+      <button data-strategy="frontload">Front-load</button>
+    </div>
+    <span class="maxelect" id="maxElectWrap" style="display:none">
+      <label for="maxElect">Max election my plan allows</label>
+      <input type="number" id="maxElect" min="1" max="100" step="1">%
+    </span>
+  </div>
+  <div id="answerBody"></div>
+  <div class="answer-foot">
+    <label for="granularity">My plan takes elections in</label>
+    <select id="granularity">
+      <option value="1">whole percentages (1%)</option>
+      <option value="0.5">half percentages (0.5%)</option>
+      <option value="0.1">tenths of a percent (0.1%)</option>
+      <option value="dollar">exact dollar amounts</option>
+    </select>
+  </div>
+</div>
+
+<!-- CHART -->
+<div class="card" id="chartCard">
+  <div class="chart-head">
+    <h2>Your path to the max</h2>
+    <div class="legend">
+      <span><span class="key" style="background:var(--s1)"></span>Pre-tax / Roth</span>
+      <span><span class="key" style="background:var(--s2)"></span>Employer match</span>
+      <span><span class="key" style="background:var(--s3)"></span>After-tax</span>
+    </div>
+  </div>
+  <p class="chart-sub" id="chartSub"></p>
+  <div class="chart-wrap">
+    <svg id="chart" role="img" aria-label="Cumulative 401k contributions by paycheck through year end"></svg>
+    <div id="chartTip"></div>
+  </div>
+</div>
+
+<!-- DETAILS -->
+<details class="section">
+  <summary>See the full math</summary>
+  <div class="inner">
+    <div id="meters"></div>
+    <table id="breakdown"></table>
+    <div class="explainer" id="trueupMath" style="display:none"></div>
+    <div class="paydates" id="paydates"></div>
+  </div>
+</details>
+
+<details class="section">
+  <summary id="limitsSummary">IRS limits in use</summary>
+  <div class="inner">
+    <div class="presets" id="yearPresets">
+      <button data-year="2026">2026</button>
+      <button data-year="2025">2025</button>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="limDeferral">Employee deferral limit (402(g))</label>
+        <input type="number" id="limDeferral" min="0" step="500">
+      </div>
+      <div class="field">
+        <label for="limTotal">Total limit, all sources (415(c))</label>
+        <input type="number" id="limTotal" min="0" step="500">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="limCatchup">Catch-up (50+)</label>
+        <input type="number" id="limCatchup" min="0" step="100">
+      </div>
+      <div class="field">
+        <label for="limCatchup63">Catch-up (60–63)</label>
+        <input type="number" id="limCatchup63" min="0" step="100">
+      </div>
+    </div>
+    <p class="hint">Presets fill official IRS numbers; fields stay editable for future years. The IRS publishes new amounts each November.</p>
+  </div>
+</details>
+
+<footer>
+  <p><b>Assumptions &amp; fine print.</b> Per-check gross pay is salary ÷ 26 (bi-weekly) or ÷ 24 (semi-monthly) - raises will shift the percentages, so re-check after any comp change. Election changes usually take a pay period or two to apply; make them a few days before payday. A year-end true-up is typically deposited early the following year but generally counts toward this year's 415(c) limit. Compensation above the 401(a)(17) cap can't be matched or deferred against. This is a planning aid, not tax advice.</p>
+  <button class="reset" id="resetBtn">Reset everything to defaults</button>
+</footer>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const PRESETS = {
+    2026: { limDeferral: 24500, limTotal: 72000, limCatchup: 8000, limCatchup63: 11250, compCap: 360000, rothCatchupWage: 150000 },
+    2025: { limDeferral: 23500, limTotal: 70000, limCatchup: 7500, limCatchup63: 11250, compCap: 350000, rothCatchupWage: 145000 },
+  };
+  const DEFAULTS = {
+    year: '2026',
+    ...PRESETS[2026],
+    ageBracket: 'under50',
+    salary: 150000,
+    matchType: 'percent',
+    matchRate: 50,
+    matchCap: 6,
+    t1Rate: 100,
+    t1Width: 3,
+    t2Rate: 50,
+    t2Width: 2,
+    matchDollarRate: 50,
+    matchDollarCap: 12250,
+    trueup: 'unsure',
+    strategy: 'even',
+    maxElect: 50,
+    hasBonus: 'no',
+    bonusAmount: 0,
+    bonusMonth: 'none',
+    ytdDeferral: 0,
+    ytdMatch: 0,
+    ytdAfterTax: 0,
+    sched: 'biweekly',
+    baseDate: '',            // filled with most recent Friday on first load
+    smDayA: '15',
+    smDayB: 'last',
+    granularity: '1',
+  };
+  const STORE_KEY = 'mbr-calc-v1';
+
+  const $ = id => document.getElementById(id);
+  const fields = ['limDeferral','limTotal','limCatchup','limCatchup63','ageBracket','salary',
+                  'matchType','matchRate','matchCap','t1Rate','t1Width','t2Rate','t2Width',
+                  'matchDollarRate','matchDollarCap','trueup','maxElect','hasBonus','bonusAmount','bonusMonth',
+                  'ytdDeferral','ytdMatch','ytdAfterTax',
+                  'baseDate','smDayA','smDayB','granularity'];
+
+  const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const usd2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtDate = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmtDateFull = d => d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const pct = (v, digits = 2) => `${v.toFixed(digits).replace(/\.?0+$/, '') || '0'}%`;
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // ---------- state ----------
+  let state = { ...DEFAULTS };
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY));
+      if (saved && typeof saved === 'object') state = { ...DEFAULTS, ...saved };
+    } catch (e) { /* corrupted storage - fall back to defaults */ }
+    if (!state.baseDate) {
+      const d = new Date();
+      d.setDate(d.getDate() - ((d.getDay() + 2) % 7)); // most recent Friday
+      state.baseDate = toISO(d);
+    }
+    if (state.bonusMonth === 'none' || state.bonusMonth === '' || state.bonusMonth == null) {
+      state.bonusMonth = String(new Date().getMonth());
+    }
+  }
+  function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+  function toISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  function fromISO(s) {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  // ---------- pay dates ----------
+  function biweeklyDates(base, year) {
+    const jan1 = new Date(year, 0, 1);
+    const d = new Date(base);
+    const step = 14 * 86400000;
+    if (d < jan1) {
+      const k = Math.ceil((jan1 - d) / step);
+      d.setDate(d.getDate() + k * 14);
+    }
+    const out = [];
+    while (d.getFullYear() === year) {
+      out.push(new Date(d));
+      d.setDate(d.getDate() + 14);
+    }
+    return out;
+  }
+  function semimonthlyDates(dayA, dayB, year) {
+    const out = [];
+    for (let m = 0; m < 12; m++) {
+      const lastDay = new Date(year, m + 1, 0).getDate();
+      for (const spec of [dayA, dayB]) {
+        const day = spec === 'last' ? lastDay : Math.min(Number(spec), lastDay);
+        out.push(new Date(year, m, day));
+      }
+    }
+    return out.sort((a, b) => a - b);
+  }
+
+  // ---------- core calculation ----------
+  function calc() {
+    const n = k => Math.max(0, Number(state[k]) || 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+
+    const catchup = state.ageBracket === '60to63' ? n('limCatchup63')
+                  : state.ageBracket === '50plus' ? n('limCatchup') : 0;
+    const deferralLimit = n('limDeferral') + catchup;
+    const totalLimit = n('limTotal');
+    const preset = PRESETS[state.year] || PRESETS[2026];
+    const compCap = preset.compCap;
+    const rothCatchupWage = preset.rothCatchupWage;
+    const matchType = state.matchType || 'percent';
+    // a true-up only exists for pay-percentage formulas; dollar-cap and no-match plans are timing-proof by design
+    const hasTrueup = state.trueup === 'yes' && (matchType === 'percent' || matchType === 'tiered');
+    const timingSafe = hasTrueup || matchType === 'dollar' || matchType === 'none';
+    const strategy = timingSafe ? state.strategy : 'even';
+    const matchRate = n('matchRate') / 100;
+    const matchCapPct = n('matchCap') / 100;
+    const t1r = n('t1Rate') / 100, t1w = n('t1Width') / 100;
+    const t2r = n('t2Rate') / 100, t2w = n('t2Width') / 100;
+    const dRate = n('matchDollarRate') / 100, dCap = n('matchDollarCap');
+
+    let allDates, checksPerYear, schedError = null;
+    if (state.sched === 'biweekly') {
+      checksPerYear = 26;
+      if (!state.baseDate) { schedError = 'Set a base pay date.'; allDates = []; }
+      else {
+        const base = fromISO(state.baseDate);
+        if (base > today) { schedError = 'The base pay date must be in the past.'; allDates = []; }
+        else allDates = biweeklyDates(base, year);
+      }
+    } else {
+      checksPerYear = 24;
+      if (state.smDayA === state.smDayB) schedError = 'The two pay days must differ.';
+      allDates = schedError ? [] : semimonthlyDates(state.smDayA, state.smDayB, year);
+    }
+    const remainingDates = allDates.filter(d => d > today);
+    const past = allDates.filter(d => d <= today);
+    const N = remainingDates.length;
+    const gross = n('salary') / checksPerYear;
+
+    // build remaining checks, attaching the bonus to the first check of its month
+    const bonus = state.hasBonus === 'yes' ? n('bonusAmount') : 0;
+    const bonusMonth = state.bonusMonth === 'none' ? -1 : Number(state.bonusMonth);
+    let bonusApplied = false;
+    const checks = remainingDates.map(d => {
+      const isBonus = !bonusApplied && bonus > 0 && d.getMonth() === bonusMonth;
+      if (isBonus) bonusApplied = true;
+      return { date: d, gross: gross + (isBonus ? bonus : 0), isBonus };
+    });
+    const bonusIgnored = bonus > 0 && bonusMonth >= 0 && !bonusApplied;
+    const totalRemainingComp = checks.reduce((s, c) => s + c.gross, 0);
+
+    // rooms
+    const remainingDeferral = Math.max(0, deferralLimit - n('ytdDeferral'));
+    const annualComp = Math.min(n('salary') + (bonusApplied ? bonus : 0), compCap);
+
+    // ---- match formulas by type ----
+    const compScale = Math.min(1, compCap / Math.max(1, n('salary') + (bonusApplied ? bonus : 0)));
+    const tieredMatch = (contrib, comp) => {
+      const r = comp > 0 ? contrib / comp : 0;
+      return (t1r * Math.min(r, t1w) + t2r * Math.min(Math.max(r - t1w, 0), t2w)) * comp;
+    };
+    let dollarCapLeft = matchType === 'dollar' ? Math.max(0, dCap - n('ytdMatch')) : 0;
+    const matchOnCheck = (contrib, grossCheck) => {
+      if (matchType === 'none') return 0;
+      if (matchType === 'dollar') {
+        const m = Math.min(dRate * contrib, dollarCapLeft);
+        dollarCapLeft -= m;
+        return m;
+      }
+      const mp = grossCheck * compScale;   // matchable pay, comp-capped
+      if (matchType === 'tiered') return tieredMatch(contrib, mp);
+      return matchRate * Math.min(contrib, matchCapPct * mp);
+    };
+    const annualMatchFormula = (totalContrib, comp) => {
+      if (matchType === 'none') return 0;
+      if (matchType === 'dollar') return Math.min(dRate * totalContrib, dCap);
+      if (matchType === 'tiered') return tieredMatch(totalContrib, comp);
+      return matchRate * Math.min(totalContrib, matchCapPct * comp);
+    };
+    const maxAnnualMatch = annualMatchFormula(deferralLimit, annualComp);
+    // contribute at least this % of each check to capture that check's full match (percent/tiered only)
+    const matchThresholdPct = matchType === 'tiered' ? (t1w + t2w) * 100 : n('matchCap');
+
+    // election rounding
+    const g = state.granularity === 'dollar' ? null : Number(state.granularity);
+    const roundUp = p => g ? Math.ceil((p - 1e-9) / g) * g : p;
+
+    // ---- simulate pre-tax + match, then after-tax ----
+    let sim = checks.map(c => ({ ...c, pre: 0, match: 0, at: 0 }));
+    let defPct = 0, atPct = 0, frontload = null;
+
+    if (strategy === 'even') {
+      defPct = totalRemainingComp > 0 ? (remainingDeferral / totalRemainingComp) * 100 : 0;
+      let room = remainingDeferral;
+      for (const s of sim) {
+        s.pre = Math.min((defPct / 100) * s.gross, room);
+        room -= s.pre;
+        s.match = matchOnCheck(s.pre, s.gross);
+      }
+    } else {
+      // front-load: max election on pre-tax until the limit, then switch to after-tax
+      const F = Math.min(100, Math.max(1, n('maxElect'))) / 100;
+      let room = remainingDeferral;
+      for (const s of sim) {
+        s.pre = Math.min(F * s.gross, room);
+        room -= s.pre;
+        s.match = matchOnCheck(s.pre, s.gross);
+      }
+      frontload = { F: F * 100, preShort: room };
+    }
+
+    // match total: with a true-up the timing doesn't matter - the annual formula wins
+    const perCheckMatch = sim.reduce((s, c) => s + c.match, 0);
+    const projDeferral = n('ytdDeferral') + sim.reduce((s, c) => s + c.pre, 0);
+    let estTotalMatch, trueUpAmount = 0;
+    if (hasTrueup) {
+      const annualFormula = annualMatchFormula(projDeferral, annualComp);
+      estTotalMatch = Math.max(n('ytdMatch') + perCheckMatch, annualFormula, n('ytdMatch'));
+      trueUpAmount = Math.max(0, estTotalMatch - n('ytdMatch') - perCheckMatch);
+    } else {
+      estTotalMatch = n('ytdMatch') + perCheckMatch;
+    }
+
+    // after-tax space (catch-up excluded from 415(c))
+    const projDeferral415 = Math.min(projDeferral, n('limDeferral'));
+    const afterTaxSpace = Math.max(0, totalLimit - projDeferral415 - estTotalMatch);
+    const remainingAfterTax = Math.max(0, afterTaxSpace - n('ytdAfterTax'));
+
+    if (strategy === 'even') {
+      atPct = totalRemainingComp > 0 ? (remainingAfterTax / totalRemainingComp) * 100 : 0;
+      let room = remainingAfterTax;
+      for (const s of sim) {
+        s.at = Math.min((atPct / 100) * s.gross, room);
+        room -= s.at;
+      }
+    } else {
+      // after-tax phase starts on the first check where pre-tax has no room left at the outset
+      const F = frontload.F / 100;
+      let room = remainingAfterTax;
+      let preRoomLeft = remainingDeferral;
+      for (const s of sim) {
+        const preActive = preRoomLeft > 0.005;
+        preRoomLeft -= s.pre;
+        if (!preActive) {
+          s.at = Math.min(F * s.gross, room);
+          room -= s.at;
+        }
+      }
+      frontload.atShort = room;
+      // phase boundary dates
+      const lastPre = [...sim].reverse().find(s => s.pre > 0.005);
+      const firstAt = sim.find(s => s.at > 0.005);
+      const lastAt = [...sim].reverse().find(s => s.at > 0.005);
+      frontload.lastPreDate = lastPre ? lastPre.date : null;
+      frontload.firstAtDate = firstAt ? firstAt.date : null;
+      frontload.doneDate = frontload.atShort < 1 && lastAt ? lastAt.date : null;
+    }
+
+    // add the true-up to the final check so the chart reaches the real year-end total
+    if (trueUpAmount > 0 && sim.length) sim[sim.length - 1].trueUp = trueUpAmount;
+
+    const defPctR = strategy === 'even' ? roundUp(defPct) : frontload.F;
+    const atPctR = strategy === 'even' ? roundUp(atPct) : frontload.F;
+    const defOvershoot = strategy === 'even' && g ? Math.max(0, (defPctR - defPct) / 100 * totalRemainingComp) : 0;
+    const atOvershoot = strategy === 'even' && g ? Math.max(0, (atPctR - atPct) / 100 * totalRemainingComp) : 0;
+
+    const projAfterTax = n('ytdAfterTax') + sim.reduce((s, c) => s + c.at, 0);
+    const ytd415 = Math.min(n('ytdDeferral'), n('limDeferral')) + n('ytdMatch') + n('ytdAfterTax');
+    const proj415 = projDeferral415 + estTotalMatch + projAfterTax;
+    const projGrandTotal = projDeferral + estTotalMatch + projAfterTax;
+
+    return {
+      today, year, catchup, deferralLimit, totalLimit, compCap, rothCatchupWage, schedError,
+      allDates, remaining: remainingDates, past, N, gross, checksPerYear,
+      hasTrueup, strategy, frontload, sim, bonus, bonusApplied, bonusIgnored, annualComp,
+      matchType, timingSafe, maxAnnualMatch, matchThresholdPct,
+      perCheckMaxMatch: annualMatchFormula(gross, gross),
+      matchEntitlement: annualMatchFormula(projDeferral, annualComp),
+      remainingDeferral, defPct, defPctR, defOvershoot,
+      estTotalMatch, perCheckMatch, trueUpAmount, projDeferral, projDeferral415,
+      afterTaxSpace, remainingAfterTax, atPct, atPctR, atOvershoot, projAfterTax,
+      ytd415, proj415, projGrandTotal, totalRemainingComp,
+      lastPay: past[past.length - 1] || null,
+      nextPay: remainingDates[0] || null,
+      n,
+    };
+  }
+
+  // ---------- chart ----------
+  function roundedTopRect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h);
+    return `M${x},${y + h} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h} Z`;
+  }
+
+  function renderChart(c) {
+    const svg = $('chart'), tip = $('chartTip');
+    const card = $('chartCard');
+    if (c.schedError || c.N === 0 || c.gross <= 0) { card.style.display = 'none'; return; }
+    card.style.display = '';
+
+    const bars = [];
+    let pre = c.n('ytdDeferral'), match = c.n('ytdMatch'), at = c.n('ytdAfterTax');
+    bars.push({ label: 'Today', date: null, dPre: 0, dMatch: 0, dAt: 0, pre, match, at });
+    for (const s of c.sim) {
+      pre += s.pre; match += s.match + (s.trueUp || 0); at += s.at;
+      bars.push({ label: fmtDate(s.date), date: s.date, dPre: s.pre, dMatch: s.match, dAt: s.at,
+                  trueUp: s.trueUp || 0, isBonus: s.isBonus, pre, match, at });
+    }
+    const ceiling = c.totalLimit + c.catchup;
+    const finalTotal = c.projGrandTotal;
+
+    const doneEarly = c.strategy === 'frontload' && c.frontload.doneDate;
+    $('chartSub').textContent = doneEarly
+      ? `Each column is a paycheck. Front-loading at ${pct(c.frontload.F, 1)}, you're fully maxed by ${fmtDate(c.frontload.doneDate)} - months of extra compounding${c.trueUpAmount > 0 ? `, and the ${usd.format(c.trueUpAmount)} true-up tops off the match` : ''}.`
+      : `Each column is a paycheck. At the recommended amounts you finish the year at ${usd.format(finalTotal)} of the ${usd.format(ceiling)} ceiling${c.catchup ? ' (415(c) + catch-up)' : ''}.`;
+
+    const W = 720, H = 300;
+    const mL = 52, mR = 10, mT = 26, mB = 26;
+    const plotW = W - mL - mR, plotH = H - mT - mB;
+
+    const yMax0 = Math.max(ceiling, finalTotal) * 1.06;
+    const step = [5000, 10000, 20000, 25000, 50000].find(s => yMax0 / s <= 5) || 100000;
+    const yMax = Math.ceil(yMax0 / step) * step;
+    const y = v => mT + plotH - (v / yMax) * plotH;
+
+    const nB = bars.length;
+    const slot = plotW / nB;
+    const barW = Math.max(6, Math.min(24, slot - 4));
+    const xOf = i => mL + i * slot + (slot - barW) / 2;
+    const col = { pre: 'var(--s1)', match: 'var(--s2)', at: 'var(--s3)' };
+
+    let elts = '';
+    for (let v = 0; v <= yMax; v += step) {
+      elts += `<line x1="${mL}" y1="${y(v)}" x2="${W - mR}" y2="${y(v)}" stroke="var(--hairline)" stroke-width="1"/>`;
+      elts += `<text x="${mL - 7}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${v >= 1000 ? `$${v / 1000}k` : '$0'}</text>`;
+    }
+    elts += `<line x1="${mL}" y1="${y(ceiling)}" x2="${W - mR}" y2="${y(ceiling)}" stroke="var(--ink-2)" stroke-width="1.25"/>`;
+    elts += `<text x="${W - mR}" y="${y(ceiling) - 6}" text-anchor="end" font-size="11.5" font-weight="600" fill="var(--ink-2)">IRS ceiling ${usd.format(ceiling)}</text>`;
+
+    const GAP = 2;
+    bars.forEach((b, i) => {
+      const x = xOf(i);
+      const segs = [
+        { v0: 0, v1: b.pre, c: col.pre },
+        { v0: b.pre, v1: b.pre + b.match, c: col.match },
+        { v0: b.pre + b.match, v1: b.pre + b.match + b.at, c: col.at },
+      ].filter(s => s.v1 - s.v0 > 0.5);
+      segs.forEach((s, si) => {
+        const yTop = y(s.v1), yBot = y(s.v0) - (si > 0 ? GAP : 0);
+        const h = Math.max(0.5, yBot - yTop);
+        if (si === segs.length - 1) elts += `<path d="${roundedTopRect(x, yTop, barW, h, 4)}" fill="${s.c}"/>`;
+        else elts += `<rect x="${x}" y="${yTop}" width="${barW}" height="${h}" fill="${s.c}"/>`;
+      });
+    });
+
+    elts += `<line x1="${mL}" y1="${y(0)}" x2="${W - mR}" y2="${y(0)}" stroke="var(--hairline)" stroke-width="1"/>`;
+
+    const every = Math.max(1, Math.ceil(nB / 7));
+    bars.forEach((b, i) => {
+      if (i % every === 0 || i === nB - 1) {
+        elts += `<text x="${xOf(i) + barW / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${b.label}</text>`;
+      }
+    });
+
+    // direct label on the final bar - skipped when it would collide with the ceiling label
+    if (Math.abs(finalTotal - ceiling) / ceiling > 0.02) {
+      const last = bars[nB - 1];
+      elts += `<text x="${xOf(nB - 1) + barW / 2}" y="${y(last.pre + last.match + last.at) - 6}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--ink)">${usd.format(finalTotal)}</text>`;
+    }
+
+    bars.forEach((b, i) => {
+      elts += `<rect class="hit" data-i="${i}" x="${mL + i * slot}" y="${mT}" width="${slot}" height="${plotH}" fill="transparent"/>`;
+    });
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = elts;
+
+    svg.querySelectorAll('.hit').forEach(r => {
+      r.addEventListener('mousemove', e => {
+        const b = bars[Number(r.dataset.i)];
+        const cells = (label, delta, total, cls = '') =>
+          `<span class="${cls}">${label}</span>` +
+          `<span class="d ${cls}">${delta === null ? '' : `+${usd2.format(delta)}`}</span>` +
+          `<span class="v ${cls}">${usd.format(total)}</span>`;
+        const dTotal = b.date ? b.dPre + b.dMatch + (b.trueUp || 0) + b.dAt : null;
+        tip.innerHTML = `<div class="t">${b.date ? fmtDateFull(b.date) : 'Year to date'}</div><div class="grid">
+          ${cells(`<span class="k" style="background:${col.pre}"></span>Pre-tax`, b.date ? b.dPre : null, b.pre)}
+          ${cells(`<span class="k" style="background:${col.match}"></span>Match${b.trueUp ? ' + true-up' : ''}`, b.date ? b.dMatch + (b.trueUp || 0) : null, b.match)}
+          ${cells(`<span class="k" style="background:${col.at}"></span>After-tax`, b.date ? b.dAt : null, b.at)}
+          ${b.isBonus ? '<span class="full">Includes your bonus</span>' : ''}
+          ${cells('Total', dTotal, b.pre + b.match + b.at, 'tcell')}
+        </div>`;
+        const wrap = svg.parentElement.getBoundingClientRect();
+        tip.style.display = 'block';
+        let tx = e.clientX - wrap.left + 14, ty = e.clientY - wrap.top - 10;
+        if (tx + tip.offsetWidth > wrap.width) tx = e.clientX - wrap.left - tip.offsetWidth - 14;
+        tip.style.left = `${tx}px`;
+        tip.style.top = `${Math.max(0, ty)}px`;
+      });
+      r.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    });
+  }
+
+  // ---------- rendering ----------
+  function meter(title, ytd, proj, limit, legendYtd, legendProj) {
+    const over = ytd > limit;
+    const w1 = Math.min(100, (ytd / limit) * 100);
+    const w2 = Math.max(0, Math.min(100 - w1, ((proj - ytd) / limit) * 100));
+    return `
+      <div class="meter-block">
+        <div class="meter-head"><span class="t">${title}</span><span class="v">${usd.format(proj)} of ${usd.format(limit)}</span></div>
+        <div class="meter${over ? ' over' : ''}">
+          <div class="seg-ytd" style="width:${w1}%"></div>
+          ${w2 > 0.2 ? `<div class="seg-proj" style="width:${w2}%"></div>` : ''}
+        </div>
+        <div class="meter-legend">
+          <span><span class="k" style="background:var(--accent)"></span>${legendYtd}: ${usd.format(ytd)}</span>
+          <span><span class="k" style="background:color-mix(in srgb, var(--accent) 45%, var(--surface))"></span>${legendProj}: ${usd.format(Math.max(0, proj - ytd))}</span>
+        </div>
+      </div>`;
+  }
+
+  function alertRow(kind, icon, html) {
+    return `<div class="alert ${kind}"><span class="icon">${icon}</span><span>${html}</span></div>`;
+  }
+
+  function render() {
+    const c = calc();
+    const dollarMode = state.granularity === 'dollar';
+
+    // --- step 1 feedback ---
+    const fb = $('schedFeedback');
+    if (c.schedError) { fb.className = 'feedback err'; fb.textContent = `✕ ${c.schedError}`; }
+    else if (c.N === 0) { fb.className = 'feedback err'; fb.textContent = '✕ No paychecks remain this year.'; }
+    else {
+      fb.className = 'feedback';
+      fb.textContent = `✓ ${c.N} paycheck${c.N === 1 ? '' : 's'} left in ${c.year} · next on ${fmtDate(c.nextPay)}`;
+    }
+
+    // --- bonus fields (step 2) ---
+    $('bonusFields').style.display = state.hasBonus === 'yes' ? '' : 'none';
+
+    // --- match group (step 2): field visibility, worth badge, example, reassurance ---
+    const isPctType = c.matchType === 'percent' || c.matchType === 'tiered';
+    $('matchPercentFields').style.display = c.matchType === 'percent' ? '' : 'none';
+    $('matchTieredFields').style.display = c.matchType === 'tiered' ? '' : 'none';
+    $('matchDollarFields').style.display = c.matchType === 'dollar' ? '' : 'none';
+    $('timingField').style.display = isPctType ? '' : 'none';
+    $('matchHowTo').style.display = isPctType ? '' : 'none';
+
+    const perDollar = r => r === 100 ? '$1 for every $1' : r < 100 ? `${Math.round(r)}¢ per $1` : `$${(r / 100).toFixed(2)} per $1`;
+    let exText = '';
+    if (c.matchType === 'percent')
+      exText = `Yours reads like: “they put in ${perDollar(c.n('matchRate'))} you save, on your first ${pct(c.n('matchCap'))} of pay.”`;
+    else if (c.matchType === 'tiered')
+      exText = `Yours reads like: “${c.n('t1Rate')}% match on your first ${pct(c.n('t1Width'))} of pay, then ${c.n('t2Rate')}% on your next ${pct(c.n('t2Width'))}.”`;
+    else if (c.matchType === 'dollar')
+      exText = `Yours reads like: “they put in ${perDollar(c.n('matchDollarRate'))} you save, until they've added ${usd.format(c.n('matchDollarCap'))}.”`;
+    const mbox = $('matchBox');
+    if (c.matchType === 'none') {
+      mbox.style.display = 'none';
+      mbox.innerHTML = '';
+    } else {
+      mbox.style.display = '';
+      mbox.innerHTML = `${exText}${c.maxAnnualMatch > 0
+        ? `<div class="worth-line">💰 Worth up to ${usd.format(c.maxAnnualMatch)} from your company this year.</div>` : ''}`;
+    }
+
+    const assure = $('matchAssure');
+    if (c.matchType === 'none') assure.textContent = '';
+    else if (c.matchType === 'dollar')
+      assure.textContent = `The match arrives with each contribution, so timing can't cost you anything - front-loading is unlocked below.`;
+    else if (state.trueup === 'yes')
+      assure.textContent = `Timing can't hurt you - front-loading is unlocked below.`;
+    else if (state.trueup === 'no')
+      assure.textContent = `Got it - we'll spread your contributions evenly so every paycheck earns its full match.`;
+    else
+      assure.textContent = `Playing it safe until you know: we'll spread your contributions evenly so no match can be lost.`;
+
+    // --- catch-up explainer (step 2) ---
+    const exp = $('catchupExplainer');
+    if (c.catchup > 0) {
+      const enhanced = state.ageBracket === '60to63';
+      exp.style.display = '';
+      exp.innerHTML = `
+        <b>${enhanced ? 'Enhanced catch-up' : 'Catch-up'} applies - here's how it changes the math:</b>
+        <ul>
+          <li>Your employee deferral limit rises to <b>${usd.format(c.deferralLimit)}</b>
+              (${usd.format(c.n('limDeferral'))} base + ${usd.format(c.catchup)} catch-up${enhanced ? ', the higher 60–63 amount that replaces the standard ' + usd.format(c.n('limCatchup')) : ''}).</li>
+          <li>Catch-up dollars <b>don't count against the ${usd.format(c.totalLimit)} all-sources limit</b>,
+              so your true total ceiling is <b>${usd.format(c.totalLimit + c.catchup)}</b> - the extra
+              ${usd.format(c.catchup)} does not shrink your after-tax (mega backdoor) space.</li>
+          <li>If you earned over ${usd.format(c.rothCatchupWage)} from this employer last year, the
+              catch-up portion must be contributed as <b>Roth</b> (SECURE 2.0, effective 2026).</li>
+        </ul>`;
+    } else {
+      exp.style.display = 'none';
+      exp.innerHTML = '';
+    }
+
+    // --- strategy controls visibility ---
+    $('strategyRow').style.display = c.timingSafe && !c.schedError && c.N > 0 ? '' : 'none';
+    $('maxElectWrap').style.display = c.timingSafe && c.strategy === 'frontload' ? '' : 'none';
+    document.querySelectorAll('#strategySeg button').forEach(b =>
+      b.classList.toggle('active', b.dataset.strategy === c.strategy));
+
+    // --- alerts ---
+    const critical = [], warnings = [];
+    if (c.n('ytdDeferral') > c.deferralLimit)
+      critical.push(alertRow('critical', '✕', `<b>Over the deferral limit</b> - YTD employee contributions exceed ${usd.format(c.deferralLimit)} by ${usd.format(c.n('ytdDeferral') - c.deferralLimit)}. Contact your plan about an excess-deferral refund before the correction deadline.`));
+    if (c.ytd415 > c.totalLimit)
+      critical.push(alertRow('critical', '✕', `<b>Over the 415(c) limit</b> - total YTD contributions exceed ${usd.format(c.totalLimit)} by ${usd.format(c.ytd415 - c.totalLimit)}.`));
+    if (!c.schedError && c.N > 0 && c.gross > 0 && c.strategy === 'even' && (c.defPct + c.atPct) > 100)
+      critical.push(alertRow('critical', '✕', `<b>Not achievable</b> - hitting both limits needs ${pct(c.defPct + c.atPct)} of every remaining check. You'll fall short this year; contribute what you can.`));
+    if (c.strategy === 'frontload' && c.frontload && (c.frontload.preShort > 1 || c.frontload.atShort > 1))
+      warnings.push(alertRow('warning', '▲', `<b>${pct(c.frontload.F, 1)} isn't enough to max out</b> - you'd finish the year ${usd.format(c.frontload.preShort + c.frontload.atShort)} short. Raise the max election${c.frontload.preShort > 1 ? '' : ' or switch to spreading evenly'}.`));
+    if (c.strategy === 'even' && !dollarMode && c.defOvershoot > 1)
+      warnings.push(alertRow('warning', '▲', `<b>Rounding overshoot (pre-tax):</b> a ${pct(c.defPctR, 1)} election contributes ~${usd.format(c.defOvershoot)} more than needed. Most plans auto-stop employee contributions at the limit - your final checks will just be smaller. Verify yours does.`));
+    if (c.strategy === 'even' && !dollarMode && c.atOvershoot > 1)
+      warnings.push(alertRow('warning', '▲', `<b>Rounding overshoot (after-tax):</b> a ${pct(c.atPctR, 1)} election contributes ~${usd.format(c.atOvershoot)} more than needed, and plans <b>don't always stop after-tax contributions</b> before you bust the 415(c) limit. Plan to dial the election down near year-end, or use exact-dollar mode if your plan supports it.`));
+    if (c.strategy === 'frontload')
+      warnings.push(alertRow('warning', '▲', `<b>Watch the after-tax finish line:</b> plans don't always stop after-tax contributions at the 415(c) limit. Set a reminder to zero your after-tax election after the ${c.frontload.doneDate ? fmtDate(c.frontload.doneDate) : 'final'} paycheck.`));
+    if (c.bonusIgnored)
+      warnings.push(alertRow('warning', '▲', `Your bonus month has no remaining paychecks, so the bonus was ignored. Pick a later month or clear it.`));
+    if (c.n('salary') > c.compCap)
+      warnings.push(alertRow('warning', '▲', `Your salary exceeds the ${usd.format(c.compCap)} compensation cap (401(a)(17)); percentages can only apply to pay up to the cap, so the real per-check math may differ. This tool caps matchable compensation accordingly.`));
+    if (state.sched === 'biweekly' && c.allDates.length === 27)
+      warnings.push(alertRow('warning', '▲', `This calendar year has <b>27 pay dates</b> on your schedule, not 26. Per-check gross is still estimated as salary ÷ 26 (how most payroll systems work), but confirm with your payroll.`));
+
+    // --- answer card ---
+    $('answerTitle').textContent = c.strategy === 'frontload'
+      ? 'Your front-loading game plan'
+      : 'Set these elections in your 401(k) portal';
+
+    let body = '';
+    if (c.schedError || c.N === 0) {
+      body = `<p class="muted-note">${c.schedError ? 'Finish step 1 to see your elections.' : 'No paychecks remain this year - there is nothing left to elect.'}</p>`;
+    } else if (c.strategy === 'frontload') {
+      const f = c.frontload;
+      const steps = [];
+      steps.push({ when: 'Now', what: `Set <b>pre-tax/Roth to ${pct(f.F, 1)}</b> and after-tax to 0%.`,
+                   sub: `Your plan auto-stops pre-tax at the ${usd.format(c.deferralLimit)} limit${f.lastPreDate ? ` - that lands around the ${fmtDate(f.lastPreDate)} check` : ''}.` });
+      if (f.firstAtDate)
+        steps.push({ when: f.lastPreDate ? `After ${fmtDate(f.lastPreDate)}` : 'Then', what: `Switch: <b>pre-tax to 0%, after-tax to ${pct(f.F, 1)}</b>.`,
+                     sub: `After-tax starts with the ${fmtDate(f.firstAtDate)} check. Make the change a few days early - elections take a pay period to apply.` });
+      if (f.doneDate)
+        steps.push({ when: `After ${fmtDate(f.doneDate)}`, what: `<b>Set everything to 0% - you're maxed for ${c.year}.</b>`,
+                     sub: c.trueUpAmount > 0 ? `Your employer's year-end true-up adds an estimated ${usd.format(c.trueUpAmount)} of missed match.` : '' });
+      body = `<div class="schedule">${steps.map(s =>
+        `<div class="sched-step"><div class="sched-when">${s.when}</div><div class="sched-what">${s.what}${s.sub ? `<div class="sub">${s.sub}</div>` : ''}</div></div>`).join('')}</div>`;
+      if (critical.length) body += critical.join('');
+      else if (f.doneDate) body += `<p class="status"><span class="ok">✓ Maxed by ${fmtDate(f.doneDate)}.</span> Every dollar gets months of extra market time versus spreading it out.</p>`;
+    } else {
+      const baseGross = c.gross;
+      const big1 = dollarMode ? usd2.format((c.defPct / 100) * baseGross) : pct(c.defPctR, 1);
+      const sub1 = dollarMode ? `${pct(c.defPct)} of each ${usd.format(baseGross)} check` : `${usd2.format((c.defPctR / 100) * baseGross)} per check · exact need ${pct(c.defPct)}`;
+      const big2 = dollarMode ? usd2.format((c.atPct / 100) * baseGross) : pct(c.atPctR, 1);
+      const sub2 = dollarMode ? `${pct(c.atPct)} of each ${usd.format(baseGross)} check` : `${usd2.format((c.atPctR / 100) * baseGross)} per check · exact need ${pct(c.atPct)}`;
+      body = `
+        <div class="elections">
+          <div class="election">
+            <div class="label"><span class="key" style="background:var(--s1)"></span>Pre-tax / Roth contribution</div>
+            <div class="value">${big1}</div>
+            <div class="sub">${sub1}</div>
+          </div>
+          <div class="election">
+            <div class="label"><span class="key" style="background:var(--s3)"></span>After-tax contribution</div>
+            <div class="value">${big2}</div>
+            <div class="sub">${sub2}</div>
+          </div>
+        </div>`;
+      if (c.bonus > 0 && c.bonusApplied)
+        body += `<p class="status">These percentages also apply to your ${usd.format(c.bonus)} bonus check - the math above already counts it.</p>`;
+      if (critical.length) body += critical.join('');
+      else body += `<p class="status"><span class="ok">✓ On track.</span> Do this for your ${c.N} remaining paychecks and you'll finish the year at ${usd.format(c.projDeferral)} in employee contributions and ${usd.format(c.projGrandTotal)} total.</p>`;
+    }
+    if (!c.schedError && c.N > 0 && warnings.length)
+      body += `<details class="checklist"><summary>⚠ ${warnings.length} thing${warnings.length === 1 ? '' : 's'} to double-check</summary>${warnings.join('')}</details>`;
+    $('answerBody').innerHTML = body;
+
+    // --- chart ---
+    renderChart(c);
+
+    // --- meters + breakdown ---
+    $('meters').innerHTML =
+      meter(`Employee contributions vs ${usd.format(c.deferralLimit)} limit${c.catchup ? ' (incl. catch-up)' : ''}`,
+            c.n('ytdDeferral'), c.projDeferral, c.deferralLimit, 'Contributed', 'Projected') +
+      meter(`All sources vs ${usd.format(c.totalLimit)} 415(c) limit`,
+            c.ytd415, c.proj415, c.totalLimit, 'Contributed', 'Projected');
+
+    const rows = [];
+    const row = (label, val, note) =>
+      rows.push(`<tr><td>${label}${note ? `<span class="note">${note}</span>` : ''}</td><td class="num">${val}</td></tr>`);
+    const section = t => rows.push(`<tr class="section"><td colspan="2">${t}</td></tr>`);
+
+    section('Pay schedule');
+    row('Gross pay per check', usd2.format(c.gross), `salary ÷ ${c.checksPerYear}${c.bonus > 0 && c.bonusApplied ? ` · plus a ${usd.format(c.bonus)} bonus check` : ''}`);
+    row('Pay periods remaining', String(c.N), c.nextPay ? `next: ${fmtDateFull(c.nextPay)}` : '');
+    section('Pre-tax / Roth contributions');
+    row('Remaining room', usd.format(c.remainingDeferral), `limit ${usd.format(c.deferralLimit)}${c.catchup ? ` = base + ${usd.format(c.catchup)} catch-up` : ''} − YTD ${usd.format(c.n('ytdDeferral'))}`);
+    row('Election', c.strategy === 'frontload' ? `${pct(c.frontload.F, 1)} until maxed` : (dollarMode ? `${usd2.format((c.defPct / 100) * c.gross)} per check` : pct(c.defPctR, 1)),
+        c.strategy === 'even' && !dollarMode ? `exact need ${pct(c.defPct)}` : '');
+    section('Employer match');
+    const matchNote = c.matchType === 'dollar'
+      ? `${c.n('matchDollarRate')}% of each dollar you contribute, up to ${usd.format(c.n('matchDollarCap'))} per year`
+      : c.matchType === 'tiered'
+        ? `${c.n('t1Rate')}% of your first ${pct(c.n('t1Width'))} of pay + ${c.n('t2Rate')}% of your next ${pct(c.n('t2Width'))}, each check`
+        : c.matchType === 'none'
+          ? 'no employer match'
+          : `${c.n('matchRate')}% of your contribution, capped at ${pct(c.n('matchCap'))} of pay each check`;
+    row('Match from remaining checks', usd.format(c.perCheckMatch), matchNote);
+    if (c.hasTrueup) row('Estimated year-end true-up', usd.format(c.trueUpAmount), 'usually deposited early next year; counts toward this year\'s 415(c)');
+    row('Estimated total match', usd.format(c.estTotalMatch),
+        c.hasTrueup ? 'annual formula - timing can\'t cost you match'
+        : c.matchType === 'dollar' ? 'arrives alongside each contribution - timing-proof'
+        : c.matchType === 'none' ? '' : 'per-paycheck match, no true-up');
+    section('After-tax (the mega backdoor)');
+    row('Projected year-end contributions + match', usd.format(c.projDeferral415 + c.estTotalMatch), c.catchup && c.projDeferral > c.projDeferral415 ? `catch-up portion (${usd.format(c.projDeferral - c.projDeferral415)}) excluded from 415(c)` : '');
+    row('Total possible after-tax', usd.format(c.afterTaxSpace), `${usd.format(c.totalLimit)} − contributions − match`);
+    row('Remaining after-tax', usd.format(c.remainingAfterTax), `after ${usd.format(c.n('ytdAfterTax'))} YTD`);
+    row('Election', c.strategy === 'frontload' ? `${pct(c.frontload.F, 1)} after pre-tax maxes` : (dollarMode ? `${usd2.format((c.atPct / 100) * c.gross)} per check` : pct(c.atPctR, 1)),
+        c.strategy === 'even' && !dollarMode ? `exact need ${pct(c.atPct)}` : '');
+    section('Year-end projection');
+    row('Employee contributions', usd.format(c.projDeferral));
+    row('Employer match', usd.format(c.estTotalMatch));
+    row('After-tax', usd.format(c.projAfterTax));
+    row('Total (vs 415(c) + catch-up)', usd.format(c.projGrandTotal),
+        `415(c)-counted portion: ${usd.format(c.proj415)} of ${usd.format(c.totalLimit)}`);
+    $('breakdown').innerHTML = rows.join('');
+
+    // --- match-mechanics walkthrough (when timing matters or is notably safe) ---
+    const tum = $('trueupMath');
+    if (c.hasTrueup && !c.schedError && c.N > 0) {
+      const collected = c.n('ytdMatch') + c.perCheckMatch;
+      const formulaText = c.matchType === 'tiered'
+        ? `your plan matches in two steps (${c.n('t1Rate')}% of your first ${pct(c.n('t1Width'))} of pay, then ${c.n('t2Rate')}% of your next ${pct(c.n('t2Width'))})`
+        : `your plan matches ${pct(c.n('matchRate'))} of what you contribute, capped at ${pct(c.n('matchCap'))} of that check's pay`;
+      tum.style.display = '';
+      tum.innerHTML = `
+        <b>How the true-up is estimated:</b>
+        <ul>
+          <li>Each paycheck, ${formulaText} - at most <b>${usd2.format(c.perCheckMaxMatch)} per check</b>.
+              The cap is a slice of <i>that check's pay</i>, so a check where you contribute little (or you've
+              already maxed out) collects less, and contributing extra can't pull future match forward -
+              match can only accrue as fast as pay is earned.</li>
+          <li>At year end, the plan redoes the math with <b>annual</b> numbers: the same formula applied to your
+              total contributions (${usd.format(c.projDeferral)}) and full-year pay (${usd.format(c.annualComp)})
+              says you're entitled to <b>${usd.format(c.matchEntitlement)}</b>.</li>
+          <li>You'll collect about <b>${usd.format(collected)}</b> through paychecks
+              (${usd.format(c.n('ytdMatch'))} YTD + ${usd.format(c.perCheckMatch)} from remaining checks), so the
+              estimated true-up deposit is <b>${usd.format(c.trueUpAmount)}</b>${c.trueUpAmount > 0
+                ? ' - usually paid early next year, and the after-tax math above already reserves 415(c) space for it.'
+                : ' - paycheck-by-paycheck collection already reaches the annual amount, so nothing is left to true up.'}</li>
+        </ul>`;
+    } else if (c.matchType === 'dollar' && !c.schedError && c.N > 0 && c.maxAnnualMatch > 0) {
+      tum.style.display = '';
+      tum.innerHTML = `
+        <b>Why this match is timing-proof:</b>
+        <ul>
+          <li>Your plan matches ${pct(c.n('matchDollarRate'))} of <i>every dollar you contribute</i> - the cap is a
+              yearly dollar amount (${usd.format(c.n('matchDollarCap'))}), not a slice of each paycheck.</li>
+          <li>So the match lands alongside each contribution: front-load and both you <i>and</i> the match are
+              done early; spread it out and it trickles in. Same total either way - there's nothing to true up.</li>
+          <li>To collect the full ${usd.format(c.n('matchDollarCap'))}, you need to contribute
+              ${usd.format(Math.min(c.deferralLimit, c.n('matchDollarCap') / Math.max(0.01, c.n('matchDollarRate') / 100)))} this year -
+              the math above assumes you will.</li>
+        </ul>`;
+    } else {
+      tum.style.display = 'none';
+      tum.innerHTML = '';
+    }
+
+    $('paydates').innerHTML = c.remaining.map(d => `<span>${fmtDateFull(d)}</span>`).join('');
+
+    const p = PRESETS[state.year];
+    const custom = p && ['limDeferral','limTotal','limCatchup','limCatchup63'].some(k => Number(state[k]) !== p[k]);
+    $('limitsSummary').textContent = `IRS limits in use: ${custom ? 'custom' : state.year} (${usd.format(c.n('limDeferral'))} employee · ${usd.format(c.totalLimit)} all sources) - view or edit`;
+  }
+
+  // ---------- wiring ----------
+  function syncUI() {
+    for (const f of fields) $(f).value = state[f];
+    document.querySelectorAll('#yearPresets button').forEach(b =>
+      b.classList.toggle('active', b.dataset.year === state.year));
+    document.querySelectorAll('#schedSeg button').forEach(b =>
+      b.classList.toggle('active', b.dataset.sched === state.sched));
+    $('biweeklyFields').style.display = state.sched === 'biweekly' ? '' : 'none';
+    $('semimonthlyFields').style.display = state.sched === 'semimonthly' ? '' : 'none';
+  }
+
+  function init() {
+    const opts = ['<option value="last">Last day</option>'];
+    for (let i = 1; i <= 28; i++) opts.push(`<option value="${i}">${i}</option>`);
+    $('smDayA').innerHTML = opts.join('');
+    $('smDayB').innerHTML = opts.join('');
+    $('bonusMonth').innerHTML = MONTHS.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+
+    load();
+    syncUI();
+    render();
+
+    for (const f of fields) {
+      const el = $(f);
+      const onEdit = () => {
+        if (state[f] === el.value) return;
+        state[f] = el.value;
+        save(); render();
+      };
+      // Safari fires only 'change' (not 'input') on <select>; listen to both everywhere
+      el.addEventListener('input', onEdit);
+      el.addEventListener('change', onEdit);
+    }
+    document.querySelectorAll('#yearPresets button').forEach(b => b.addEventListener('click', () => {
+      state.year = b.dataset.year;
+      Object.assign(state, PRESETS[state.year]);
+      save(); syncUI(); render();
+    }));
+    document.querySelectorAll('#schedSeg button').forEach(b => b.addEventListener('click', () => {
+      state.sched = b.dataset.sched;
+      save(); syncUI(); render();
+    }));
+    document.querySelectorAll('#strategySeg button').forEach(b => b.addEventListener('click', () => {
+      state.strategy = b.dataset.strategy;
+      save(); render();
+    }));
+    $('resetBtn').addEventListener('click', () => {
+      localStorage.removeItem(STORE_KEY);
+      state = { ...DEFAULTS };
+      load();
+      save(); syncUI(); render();
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
