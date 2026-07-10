@@ -33,7 +33,7 @@ jobs:
       - name: Stage site files
         run: |
           mkdir -p dist
-          cp index.html dist/
+          cp index.html robots.txt sitemap.xml favicon.svg favicon.ico apple-touch-icon.png og.png dist/
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

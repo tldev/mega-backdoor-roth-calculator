@@ -58,7 +58,9 @@ blocks the Cloudflare Pages deploy if it fails.
 
 ## Deploy to Cloudflare Pages
 
-There's no build step - the whole app is `index.html`.
+There's no build step - the whole app is `index.html`, plus a few static SEO
+assets served alongside it (`robots.txt`, `sitemap.xml`, `favicon.svg`,
+`favicon.ico`, `apple-touch-icon.png`, `og.png`).
 
 **Option A - direct upload (fastest):**
 
